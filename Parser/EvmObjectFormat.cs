@@ -17,8 +17,7 @@ public class EofHeader
     public int CodesSize => CodeSize?.Sum() ?? 0;
     public int DataSize { get; set; }
     public byte Version { get; set; }
-    public int HeaderSize => 2 + 1 + (DataSize == 0 ? 0 : (1 + 2)) + (TypeSize == 0 ? 0 : (1 + 2)) + 1 + 2 * CodeSize.Length + 1;
-    // MagicLength + Version + 1 * (SectionSeparator + SectionSize) + HeaderTerminator = 2 + 1 + 1 * (1 + 2) + 1 = 7
+    public int HeaderSize => 2 + 1 + (DataSize == 0 ? 0 : (1 + 2)) + (TypeSize == 0 ? 0 : (1 + 2)) + 3 * CodeSize.Length + 1;
     public int ContainerSize => TypeSize + CodesSize + DataSize;
     #endregion
 
@@ -150,19 +149,15 @@ public class EvmObjectFormat
                             return Result<EofHeader, string>.Failure($"EIP-3540 : container code incomplete, failed parsing code section");
                         }
 
-                        var functionsCount = (TypeSections is null || TypeSections.Value == 0 ? 2 : TypeSections.Value) / 2;
-                        for (int j = 0; j < functionsCount; j++)
-                        {
-                            var codeSectionSize = code.Slice(i, 2).ReadEthInt16();
-                            CodeSections.Add(codeSectionSize);
+                        var codeSectionSize = code.Slice(i, 2).ReadEthInt16();
+                        CodeSections.Add(codeSectionSize);
 
-                            if (codeSectionSize == 0) // code section must be non-empty (i.e : size > 0)
-                            {
-                                return Result<EofHeader, string>.Failure($"EIP-3540 : CodeSection size must be strictly bigger than 0 but found 0");
-                            }
-                            i += 2;
+                        if (codeSectionSize == 0) // code section must be non-empty (i.e : size > 0)
+                        {
+                            return Result<EofHeader, string>.Failure($"EIP-3540 : CodeSection size must be strictly bigger than 0 but found 0");
                         }
 
+                        i += 2;
                         break;
                     }
                 case SectionDividor.DataSection:

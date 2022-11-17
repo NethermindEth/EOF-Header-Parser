@@ -80,8 +80,8 @@ public enum Instruction : byte
     JUMPSUB = 0x5e,
 
     // alt values to avoid collision
-    RETF = 0xf6, // EIP-4750 altered version : collision with PUSH0
-    CALLF = 0xf7, // EIP-4750
+    RETF = 0x49, // EIP-4750 altered version : collision with PUSH0
+    CALLF = 0x5e, // EIP-4750
 
     PUSH0 = 0x5f, // EIP-3855
     PUSH1 = 0x60,
@@ -182,6 +182,7 @@ public static class InstructionExtensions
         {
             Instruction.PREVRANDAO => isPostMerge ? Enum.GetName(instruction) : "DIFFICULTY",
             Instruction.RJUMP => spec.IsEip4200Enabled ? "RJUMP" : "BEGINSUB",
+            Instruction.JUMPSUB => spec.IsEip4200Enabled ? "RETF" : "JUMPSUB",
             Instruction.RJUMPI => spec.IsEip4200Enabled ? "RJUMPI" : "RETURNSUB",
             _ => Enum.IsDefined(instruction) ? Enum.GetName(instruction) : null,
         };

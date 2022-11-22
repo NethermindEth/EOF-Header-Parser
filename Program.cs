@@ -8,14 +8,10 @@ string line;
 while((line = Console.ReadLine()) != null) {
     var bytecode = line.toByteArray();
     var actual = parser.ValidateInstructions(bytecode, spec);
-    actual.Handle(
-        success: (EofHeader? result) => 
-        {
-            var (start, size) = result.CodeSectionOffsets;
-            Console.WriteLine($"OK {bytecode[start .. (start + size)].ToHexString()}");
-        },
-        failure: (string error) => {
-            Console.WriteLine($"err: {error}");
-        }
-    );
+    var result = actual switch {
+        Success<EofHeader> success => $"OK {bytecode[success.Value.CodeSectionOffsets].ToHexString()}",
+        Failure<string> failure => $"err: {failure.Message}",
+        _ => "Unknown result"
+    };
+    Console.WriteLine(result);
 }

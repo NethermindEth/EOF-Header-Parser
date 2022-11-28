@@ -80,8 +80,8 @@ public enum Instruction : byte
     JUMPSUB = 0x5e,
 
     // alt values to avoid collision
-    RETF = 0x49, // EIP-4750 altered version : collision with PUSH0
-    CALLF = 0x5e, // EIP-4750
+    RETF = 0xb1, // EIP-4750 altered version : collision with PUSH0
+    CALLF = 0xb0, // EIP-4750
 
     PUSH0 = 0x5f, // EIP-3855
     PUSH1 = 0x60,

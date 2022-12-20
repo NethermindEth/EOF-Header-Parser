@@ -61,4 +61,40 @@ public interface IReleaseSpec
     public bool IsEip3860Enabled { get; }
     public bool IsEip4200Enabled { get; }
     public bool IsEip4750Enabled { get; }
+    public bool IsEip5450Enabled { get; }
+    public long Eip1559TransitionBlock { get; }
+    public bool ClearEmptyAccountWhenTouched => IsEip158Enabled;
+    public bool LimitCodeSize => IsEip170Enabled;
+    public bool UseHotAndColdStorage => IsEip2929Enabled;
+    public bool UseTxAccessLists => IsEip2930Enabled;
+    public bool AddCoinbaseToTxAccessList => IsEip3651Enabled;
+    public bool ModExpEnabled => IsEip198Enabled;
+    public bool Bn128Enabled => IsEip196Enabled && IsEip197Enabled;
+    public bool BlakeEnabled => IsEip152Enabled;
+    public bool Bls381Enabled => IsEip2537Enabled;
+    public bool ChargeForTopLevelCreate => IsEip2Enabled;
+    public bool FailOnOutOfGasCodeDeposit => IsEip2Enabled;
+    public bool UseShanghaiDDosProtection => IsEip150Enabled;
+    public bool UseExpDDosProtection => IsEip160Enabled;
+    public bool UseLargeStateDDosProtection => IsEip1884Enabled;
+    public bool ReturnDataOpcodesEnabled => IsEip211Enabled;
+    public bool ChainIdOpcodeEnabled => IsEip1344Enabled;
+    public bool Create2OpcodeEnabled => IsEip1014Enabled;
+    public bool DelegateCallEnabled => IsEip7Enabled;
+    public bool StaticCallEnabled => IsEip214Enabled;
+    public bool ShiftOpcodesEnabled => IsEip145Enabled;
+    public bool SubroutinesEnabled => IsEip2315Enabled;
+    public bool StaticRelativeJumpsEnabled => IsEip4200Enabled;
+    public bool FunctionSections => IsEip4750Enabled;
+    public bool RevertOpcodeEnabled => IsEip140Enabled;
+    public bool ExtCodeHashOpcodeEnabled => IsEip1052Enabled;
+    public bool SelfBalanceOpcodeEnabled => IsEip1884Enabled;
+    public bool UseConstantinopleNetGasMetering => IsEip1283Enabled;
+    public bool UseIstanbulNetGasMetering => IsEip2200Enabled;
+    public bool UseNetGasMetering => UseConstantinopleNetGasMetering | UseIstanbulNetGasMetering;
+    public bool UseNetGasMeteringWithAStipendFix => UseIstanbulNetGasMetering;
+    public bool Use63Over64Rule => UseShanghaiDDosProtection;
+    public bool BaseFeeEnabled => IsEip3198Enabled;
+    public bool IncludePush0Instruction => IsEip3855Enabled;
+    public bool TransientStorageEnabled => IsEip1153Enabled;
 }

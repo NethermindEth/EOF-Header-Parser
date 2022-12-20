@@ -48,30 +48,36 @@ public class EvmObjectFormat
     private const byte EofFormatDiff = 0x00;
     private byte[] EofMagic => new byte[] { EofFormatByte, EofFormatDiff };
 
-    public bool HasEOFFormat(ReadOnlySpan<byte> code) => code.Length > EofMagicLength && code.StartsWith(EofMagic);
+    public bool HasEofPrefix(ReadOnlySpan<byte> code, out byte? version) {
+        version = null;
+        if(code.Length > EofMagicLength && code.StartsWith(EofMagic)) {
+            version = code[EofMagicLength];
+            return true;
+        }
+        return false;
+    } 
     public Result ExtractHeader(ReadOnlySpan<byte> code, IReleaseSpec spec)
     {
-        if (!HasEOFFormat(code))
+        if (!HasEofPrefix(code, out byte? version))
         {
             return Failure<String>.From($"Code doesn't start with Magic byte sequence expected 0xEF00");
         }
 
         int codeLen = code.Length;
 
-        int i = EofMagicLength;
-        byte EOFVersion = code[i++];
+        int i = EofMagicLength + 1;
 
         var header = new EofHeader
         {
-            Version = EOFVersion
+            Version = version.Value
         };
 
-        switch (EOFVersion)
+        switch (version.Value)
         {
             case 1:
                 return HandleEOF1(spec, code, ref header, codeLen, ref i);
             default:
-                return Failure<String>.From($"Code has wrong EOFn version expected {1} but found {EOFVersion}");
+                return Failure<String>.From($"Code has wrong EOFn version expected {1} but found {version.Value}");
         }
     }
 
@@ -92,9 +98,9 @@ public class EvmObjectFormat
             {
                 case SectionDividor.Terminator:
                     {
-                        if (CodeSections.Count == 0 || CodeSections[0] == 0)
+                        if (CodeSections.Count == 0 || CodeSections.Any(sectionSize => sectionSize == 0 ))
                         {
-                            return Failure<String>.From($"CodeSection size must follow a CodeSection, CodeSection length was {header.CodesSize}");
+                            return Failure<String>.From($"no CodeSection can have a 0 length, CodeSection length was {header.CodesSize}");
                         }
 
                         if (CodeSections.Count > 1 && CodeSections.Count != (TypeSections / 2))
@@ -209,7 +215,6 @@ public class EvmObjectFormat
         return Success<EofHeader>.From(header);
     }
 
-    public Result ValidateEofCode(ReadOnlySpan<byte> code, IReleaseSpec spec) => ExtractHeader(code, spec);
     public Result ValidateInstructions(ReadOnlySpan<byte> code, IReleaseSpec spec)
     {
         // check if code is EOF compliant
@@ -217,9 +222,7 @@ public class EvmObjectFormat
         {
             return Failure<String>.From($"EOF is not enabled on this chain");
         }
-
         
-
         var result = ExtractHeader(code, spec);
         return result switch {
             Failure<String> error => error,
@@ -228,17 +231,131 @@ public class EvmObjectFormat
     }
 
     Result validateInstructionInit(ref ReadOnlySpan<byte> code, EofHeader header, IReleaseSpec spec) {
-        for (int i = 0; i < header.CodeSize.Length; i++)
+        
+        for (ushort i = 0; i < header.CodeSize.Length; i++)
         {
-            var result = ValidateSectionInstructions(ref code, i, header, spec);
-            if (result is Failure<String> failure)
+            var opcodeValidationResult = ValidateSectionInstructions(ref code, i, header, spec);
+            if (opcodeValidationResult is Failure<String> failure1)
             {
-                return Failure<String>.From(failure.Message);
+                return Failure<String>.From(failure1.Message);
+            }
+
+            if (spec.IsEip5450Enabled)
+            {
+                var stackValidationResult = ValidateStackState(ref code, i, header, spec);
+                if (opcodeValidationResult is Failure<String> failure2)
+                {
+                    return Failure<String>.From(failure2.Message);
+                }
             }
         }
         return Success<EofHeader>.From(header);
     }
+    private Result ValidateStackState(ref ReadOnlySpan<byte> container, ushort funcId, EofHeader header, IReleaseSpec spec)
+    {
+        Dictionary<int, int?> visitedLines = new();
+        byte[] typesection = header.TypeSize != 0 
+            ? container.Slice(header.ContainerSize, header.TypeSize).ToArray()
+            : new byte[] {0 , 0};
+        var (startOffset, sectionSize) = header[funcId];
+        ReadOnlySpan<byte> code = container.Slice(header.CodeSectionOffsets.Start.Value + startOffset, sectionSize);
 
+        int peakStackHeight = typesection[funcId * 2];
+        Stack<(int Position, int StackHeigth)> workSet = new();
+        workSet.Push((0, peakStackHeight));
+
+        while (workSet.TryPop(out var worklet))
+        {
+            (int pos, int stackHeight) = worklet;
+            bool stop = false;
+            while (!stop)
+            {
+                Instruction opcode = (Instruction)code[pos];
+                (var inputs, var immediates, var outputs) = opcode.StackRequirements(spec);
+
+                if (visitedLines.ContainsKey(pos))
+                {
+                    if (stackHeight != visitedLines[pos])
+                    {
+                        return Failure<String>.From($"EIP-5450 : Branch joint line has invalid stack height");
+                    }
+                    break;
+                }
+                else
+                {
+                    visitedLines[pos] = stackHeight;
+                }
+
+                if (opcode is Instruction.CALLF or Instruction.JUMPF)
+                {
+                    var sectionIndex = code.Slice(pos + 1, 2).ReadEthUInt16();
+                    inputs = typesection[sectionIndex * 2];
+                    outputs = typesection[sectionIndex * 2 + 1];
+                }
+
+                if (stackHeight < inputs)
+                {
+                    return Failure<String>.From($"EIP-5450 : Stack Underflow required {inputs} but found {stackHeight}");
+                }
+
+                stackHeight += outputs - inputs;
+                peakStackHeight = Math.Max(peakStackHeight, stackHeight);
+
+                switch (opcode)
+                {
+                    case Instruction.RJUMP:
+                        {
+                            var offset = code.Slice(pos + 1, 2).ReadEthInt16();
+                            var jumpDestination = pos + immediates + 1 + offset;
+                            pos += jumpDestination;
+                            break;
+                        }
+                    case Instruction.RJUMPI:
+                        {
+                            var offset = code.Slice(pos + 1, 2).ReadEthInt16();
+                            var jumpDestination = pos + immediates + 1 + offset;
+                            workSet.Push((jumpDestination, stackHeight));
+                            pos += immediates + 1;
+                            break;
+                        }
+                    case Instruction.RJUMPV:
+                        {
+                            var count = code[pos + 1];
+                            immediates = count * 2 + 1;
+                            for (short j = 0; j < count; j++)
+                            {
+                                int case_v = pos + 2 + j * 2;
+                                int offset = code.Slice(case_v, 2).ReadEthInt16();
+                                int jumptDestination = pos + immediates + 1 + offset;
+                                workSet.Push((jumptDestination, stackHeight));
+                            }
+                            pos += immediates + 1;
+                            break;
+                        }
+                    default:
+                        {
+                            if (opcode.IsTerminatingInstruction())
+                            {
+                                var expectedHeight = opcode is Instruction.RETF or Instruction.JUMPF ? typesection[funcId * 2 + 1] : 0;
+                                if (expectedHeight != stackHeight)
+                                {
+                                    return Failure<String>.From($"EIP-5450 : Stack state invalid required height {expectedHeight} but found {stackHeight}");
+                                }
+                                stop = true;
+                            }
+                            else
+                            {
+                                pos += 1 + immediates;
+                            }
+                            break;
+                        }
+                }
+
+            }
+
+        }
+        return peakStackHeight <= 1024 ? Success<bool>.From(true) : Failure<String>.From($"EIP-5450 : Stack state invalid peak height {peakStackHeight} exceeds 1024");
+    }
     public Result ValidateSectionInstructions(ref ReadOnlySpan<byte> container, int sectionId, EofHeader header, IReleaseSpec spec)
     {
         // check if code is EOF compliant
@@ -262,7 +379,7 @@ public class EvmObjectFormat
             opcode = (Instruction)code[i];
             i++;
             // validate opcode
-            if (!Enum.IsDefined(opcode.Value))
+            if (!opcode.Value.IsValid(spec, true))
             {
                 return Failure<String>.From($"CodeSection contains undefined opcode {opcode}");
             }
@@ -314,19 +431,6 @@ public class EvmObjectFormat
                 immediates.Add(new Range(i, i + len));
                 i += len;
             }
-        }
-
-        bool endCorrectly = opcode switch
-        {
-            Instruction.RETF when spec.IsEip4750Enabled => true,
-            Instruction.STOP or Instruction.RETURN or Instruction.REVERT or Instruction.INVALID or Instruction.SELFDESTRUCT
-                => true,
-            _ => false
-        };
-
-        if (!endCorrectly)
-        {
-            return Failure<String>.From($"Last opcode {opcode} in CodeSection should be either [{Instruction.RETF}, {Instruction.STOP}, {Instruction.RETURN}, {Instruction.REVERT}, {Instruction.INVALID}, {Instruction.SELFDESTRUCT}");
         }
 
         if (spec.IsEip4200Enabled)

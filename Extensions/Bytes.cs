@@ -5,7 +5,7 @@ using System.Text;
 namespace TypeExtensions;
 
 public static class Bytes {
-    public static uint ReadEthUInt16(this ReadOnlySpan<byte> bytes)
+    public static ushort ReadEthUInt16(this ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length > 2)
         {
@@ -22,7 +22,7 @@ public static class Bytes {
         return BinaryPrimitives.ReadUInt16BigEndian(fourBytes);
     }
 
-    public static int ReadEthInt16(this ReadOnlySpan<byte> bytes)
+    public static short ReadEthInt16(this ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length > 2)
         {

@@ -85,9 +85,12 @@ public class EvmObjectFormat
         {
             EofHeader? header = null;
             var result = 
-                TryParseEofHeader(container, out header)
-                & ValidateBody(container, ref header)
-                & ValidateInstructions(container, ref header);
+                TryParseEofHeader(container, out header) is Failure<string> headerParsingFailure 
+                ?   headerParsingFailure
+                :   ValidateBody(container, ref header) is Failure<string> bodyValidationFailure
+                    ? bodyValidationFailure
+                    : ValidateInstructions(container, ref header);
+
             if(result is Failure<string> failure)
             {
                 return failure;
@@ -295,9 +298,9 @@ public class EvmObjectFormat
                 ReadOnlySpan<byte> code = container.Slice(codeSectionBegin, codeSectionSize);
                 ReadOnlySpan<byte> typesection = container.Slice(typeSectionBegin, typeSectionSize);
 
-                valid &= ValidateSectionInstructions(sectionId, in code, in typesection, ref header)
-                       & ValidateStackState(sectionId, in code, in typesection, ref header);
-
+                valid  = ValidateSectionInstructions(sectionId, in code, in typesection, ref header) is Failure<string> error 
+                    ? error 
+                    : ValidateStackState(sectionId, in code, in typesection, ref header);
                 if(valid is Failure<string> failure)
                 {
                     return failure;
@@ -556,7 +559,7 @@ public class EvmObjectFormat
                             {
                                 if (opcode.IsTerminating(_releaseSpec))
                                 {
-                                    var expectedHeight = opcode is Instruction.RETF ? typesection[sectionId * MINIMUM_TYPESECTION_SIZE + 1] : 0;
+                                    var expectedHeight = opcode is Instruction.RETF ? typesection[sectionId * MINIMUM_TYPESECTION_SIZE + 1] : stackHeight;
                                     if (expectedHeight != stackHeight)
                                     {
                                         header = null;

@@ -570,6 +570,11 @@ public class EvmObjectFormat
                                 else
                                 {
                                     pos += 1 + immediates;
+                                    if(pos >= code.Length)
+                                    {
+                                        header = null;
+                                        return Failure<String>.From($"EIP-5450 : Invalid code, reached end of code without a terminating instruction");
+                                    }
                                 }
                                 break;
                             }

@@ -39,7 +39,7 @@ while((line = Console.ReadLine()) != null) {
                     var end = section.EndOffset;
                     var code = bytecode[start..end];
                     return code.ToHexString();
-                }));
+                })).ToLower();
                 Console.WriteLine($"OK {codeSections}");
                 break;
             case Failure<string> failure:

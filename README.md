@@ -1,6 +1,9 @@
 # EOF-Header-Parser
 a simple parser of EOF headers from Shanghai compatible bytecodes 
 
+# Run : 
+* ``dotnet run <arguments>+``
+
 # Usage : 
 * without cmd arguments : Assumes Full EOF
 * with cmd arguments : 

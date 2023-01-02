@@ -33,7 +33,7 @@ while((line = Console.ReadLine()) != null) {
 
     switch(actual) {
         case Success<EofHeader?> success:
-            var codeSections = String.Join(", ", success.Value.Value.CodeSections.Select(section => {
+            var codeSections = String.Join(",", success.Value.Value.CodeSections.Select(section => {
                 var start = section.Start;
                 var end = section.EndOffset;
                 var code = bytecode[start..end];

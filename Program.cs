@@ -30,11 +30,20 @@ int idx = 1;
 while((line = Console.ReadLine()) != null) {
     var bytecode = line.toByteArray();
     var actual = parser.IsValidEof(bytecode);
-    var result = actual switch {
-        Success<EofHeader?> success => $"OK [{success.Value?.ToString()}]",
-        Failure<string> failure => $"err: {failure.Message}",
-        _ => "Unknown result"
-    };
+
+    switch(actual) {
+        case Success<EofHeader?> success:
+            var codeSections = String.Join(", ", success.Value.Value.CodeSections.Select(section => {
+                var start = section.Start;
+                var end = section.EndOffset;
+                var code = bytecode[start..end];
+                return code.ToHexString();
+            }));
+            Console.WriteLine($"OK {codeSections}");
+            break;
+        case Failure<string> failure:
+            Console.WriteLine($"err: {failure.Message}");
+            break;
+    }
     idx ++;
-    Console.WriteLine(result);
 }

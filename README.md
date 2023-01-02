@@ -3,8 +3,9 @@ a simple parser of EOF headers from Shanghai compatible bytecodes
 
 # Usage : 
 * without cmd arguments : Assumes Full EOF
-* with cmd arguments : ``--deactivate|-d <Eip-Number>+``, Every EIP deactivated will deactivate the ones that depend on it
-
+* with cmd arguments : 
+  * ``--deactivate|-d <Eip-Number>+``, Every EIP deactivated will deactivate the ones that depend on it
+  * ``--diff <filepaths>+``, diffs results of different files
 # Example : 
 * Input 
 

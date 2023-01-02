@@ -555,31 +555,29 @@ public class EvmObjectFormat
                                 pos += immediates + 1;
                                 break;
                             }
-                        default:
+                        default : 
                             {
-                                if (opcode.IsTerminating(_releaseSpec))
-                                {
-                                    var expectedHeight = opcode is Instruction.RETF ? typesection[sectionId * MINIMUM_TYPESECTION_SIZE + 1] : stackHeight;
-                                    if (expectedHeight != stackHeight)
-                                    {
-                                        header = null;
-                                        return Failure<String>.From($"EIP-5450 : Stack state invalid required height {expectedHeight} but found {stackHeight}");
-                                    }
-                                    stop = true;
-                                }
-                                else
-                                {
-                                    pos += 1 + immediates;
-                                    if(pos >= code.Length)
-                                    {
-                                        header = null;
-                                        return Failure<String>.From($"EIP-5450 : Invalid code, reached end of code without a terminating instruction");
-                                    }
-                                }
+                                pos += 1 + immediates;
                                 break;
                             }
                     }
 
+                    if (opcode.IsTerminating(_releaseSpec))
+                    {
+                        var expectedHeight = opcode is Instruction.RETF ? typesection[sectionId * MINIMUM_TYPESECTION_SIZE + 1] : stackHeight;
+                        if (expectedHeight != stackHeight)
+                        {
+                            header = null;
+                            return Failure<String>.From($"EIP-5450 : Stack state invalid required height {expectedHeight} but found {stackHeight}");
+                        }
+                        break;
+                    }
+                    
+                    else if(pos >= code.Length)
+                    {
+                        header = null;
+                        return Failure<String>.From($"EIP-5450 : Invalid code, reached end of code without a terminating instruction");
+                    }
                 }
             }
 

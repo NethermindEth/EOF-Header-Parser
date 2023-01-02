@@ -47,7 +47,7 @@ while((line = Console.ReadLine()) != null) {
                 break;
         }
     } catch(Exception e) {
-        Console.WriteLine($"Exception : {e.Message} at line {idx}");
+        Console.WriteLine($"Exception : {e.Message} at line {idx} : {e.StackTrace}");
     }
     idx ++;
 }

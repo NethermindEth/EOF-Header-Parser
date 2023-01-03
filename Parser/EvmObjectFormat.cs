@@ -264,17 +264,11 @@ public class EvmObjectFormat
                 return Failure<String>.From($"EIP-4750 : Code section count limit exceeded only {MAXIMUM_CODESECTIONS_COUNT} allowed but found {codeSections.Length}");
             }
 
-            if(ValidateTypeSection(typesection) is Failure<String> failure)
-            {
-                header = null;
-                return failure;
-            }
-
             int startOffset = CalculateHeaderSize(header.Value.CodeSections.Length);
             int calculatedCodeLength = header.Value.TypeSection.Size
                 + header.Value.CodeSections.Sum(c => c.Size)
                 + header.Value.DataSection.Size;
-
+            
             ReadOnlySpan<byte> contractBody = container[startOffset..];
 
             if (contractBody.Length != calculatedCodeLength)
@@ -282,6 +276,13 @@ public class EvmObjectFormat
                 header = null;
                 return Failure<String>.From($"EIP-3540 : CodeSection size must follow a CodeSection, CodeSection length was {codeSections.Length}");
             }
+
+            if(ValidateTypeSection(typesection) is Failure<String> failure)
+            {
+                header = null;
+                return failure;
+            }
+
             return Success<bool>.From(true);
         }
 

@@ -17,12 +17,15 @@ public static class FileExtensions
             return Array.Empty<string>();
         }
 
+        string[] lines = Array.Empty<string>();
         if(isUri.Value) {
             var client = new WebClient();
-            return client.DownloadString(filePath).Split('\n');
+            lines =  client.DownloadString(filePath).Split('\n');
         } else {
-            return File.ReadAllLines(filePath);
+            lines = File.ReadAllLines(filePath);
         }
+
+        return lines.Select(l => l.Trim()).Where(str => !String.IsNullOrWhiteSpace(str)).ToArray();
     }
 
 }

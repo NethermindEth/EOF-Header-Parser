@@ -94,7 +94,7 @@ public record Config {
                     break;
             }
         } catch(Exception e) {
-            Console.WriteLine($"Exception : {e.Message} at line {idx} : {e.StackTrace}");
+            Console.WriteLine($"err : {e.Message} at line {idx}");
         }
     }
 

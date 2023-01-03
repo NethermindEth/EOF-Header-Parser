@@ -94,7 +94,7 @@ public record Config {
                     break;
             }
         } catch(Exception e) {
-            Console.WriteLine($"err : {e.Message} at line {idx}");
+            Console.WriteLine($"err: {e.Message} at line {idx}");
         }
     }
 

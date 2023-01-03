@@ -78,7 +78,6 @@ public record Config {
         var bytecode = line.toByteArray();
         try {
             var actual = parser.IsValidEof(bytecode);
-            Console.Write($"Line {idx} : ");
             switch(actual) {
                 case Success<EofHeader?> success:
                     var codeSections = String.Join(",", success.Value.Value.CodeSections.Select(section => {

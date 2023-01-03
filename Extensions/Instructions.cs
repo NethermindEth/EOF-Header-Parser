@@ -180,7 +180,6 @@ namespace Nethermind.Evm
         {
             Instruction.INVALID or Instruction.STOP or Instruction.RETURN or Instruction.REVERT => true,
             Instruction.JUMPF or Instruction.RETF when spec.IsEip4750Enabled => true,
-            // Instruction.SELFDESTRUCT => true
             _ => false
         };
 
@@ -215,38 +214,92 @@ namespace Nethermind.Evm
             };
         }
 
-        public static (int InputCount, int immediates, int OutputCount) StackRequirements(this Instruction instruction, IReleaseSpec spec) => instruction switch
+        public static (int InputCount, int OutputCount, int immediates) StackRequirements(this Instruction instruction) => instruction switch
         {
-            Instruction.STOP or Instruction.JUMPDEST or Instruction.INVALID or Instruction.CALLF or Instruction.JUMPF => (0, instruction is Instruction.CALLF ? 2 : 0, 0),
-            Instruction.ADD or Instruction.MUL or Instruction.SUB or Instruction.DIV or Instruction.SDIV or Instruction.MOD or Instruction.SMOD or
-            Instruction.EXP or Instruction.SIGNEXTEND or Instruction.LT or Instruction.GT or Instruction.SLT or Instruction.SGT or Instruction.EQ or
-            Instruction.AND or Instruction.OR or Instruction.XOR or Instruction.BYTE or Instruction.SHL or Instruction.SHR or Instruction.SAR or Instruction.SHA3 => (2, 0, 1),
-            Instruction.ADDMOD or Instruction.MULMOD or Instruction.CALLDATACOPY or Instruction.CREATE => (3, 0, 1),
-            Instruction.ISZERO or Instruction.NOT or Instruction.BALANCE or Instruction.EXTCODESIZE or Instruction.EXTCODEHASH or
-            Instruction.BLOCKHASH or Instruction.SLOAD or Instruction.MLOAD or Instruction.TLOAD => (1, 0, 1),
-            Instruction.ORIGIN or Instruction.ADDRESS or Instruction.CALLER or Instruction.CALLVALUE or
-            Instruction.CALLDATALOAD or Instruction.CALLDATASIZE or Instruction.CODESIZE or Instruction.GASPRICE or
-            Instruction.RETURNDATASIZE or Instruction.COINBASE or Instruction.TIMESTAMP or Instruction.NUMBER or
-            Instruction.PREVRANDAO or Instruction.GASLIMIT or Instruction.CHAINID or Instruction.SELFBALANCE or
-            Instruction.BASEFEE or Instruction.PC or Instruction.MSIZE or Instruction.GAS => (0, 0, 1),
-            Instruction.MSTORE or Instruction.MSTORE8 or Instruction.SSTORE or Instruction.JUMPI or Instruction.RETURN or Instruction.REVERT or Instruction.TSTORE => (2, 0, 0),
-            Instruction.CODECOPY or Instruction.RETURNDATACOPY => (3, 0, 0),
-            Instruction.JUMP or Instruction.SELFDESTRUCT or Instruction.POP => (1, 0, 0),
-            Instruction.CALL or Instruction.CALLCODE => (7, 0, 1),
-            Instruction.DELEGATECALL or Instruction.STATICCALL => (6, 0, 1),
-            Instruction.EXTCODECOPY => (4, 0, 0),
-            Instruction.CREATE2 => (4, 0, 1),
-            Instruction.RJUMPV when spec.IsEip4200Enabled || spec.SubroutinesEnabled => spec.IsEip4200Enabled
-                ? (1, 4, 0) /* 4 is minimum but it needs to be calculated*/
-                : (1, 0, 0),
-            Instruction.RJUMP when spec.IsEip4200Enabled || spec.SubroutinesEnabled => spec.IsEip4200Enabled ? (0, 2, 0) : (0, 0, 0),
-            Instruction.RJUMPI when spec.IsEip4200Enabled || spec.SubroutinesEnabled => spec.IsEip4200Enabled ? (1, 2, 0) : (0, 0, 0),
-            Instruction.RETF => (0, 0, 0),
-            >= Instruction.LOG0 and <= Instruction.LOG4 => (2 + instruction - Instruction.LOG0, 0, 0),
-            >= Instruction.PUSH0 and <= Instruction.PUSH32 => (0, instruction - Instruction.PUSH0, 1),
-            >= Instruction.DUP1 and <= Instruction.DUP16 => (instruction - Instruction.DUP1 + 1, 0, instruction - Instruction.DUP1 + 2),
-            >= Instruction.SWAP1 and <= Instruction.SWAP16 => (instruction - Instruction.SWAP1 + 2, 0, instruction - Instruction.SWAP1 + 2),
-            _ => throw new NotImplementedException()
+            Instruction.STOP => (0 , 0 , 0),
+            Instruction.ADD => (2 , 1 , 0) ,
+            Instruction.MUL => (2 , 1 , 0) ,
+            Instruction.SUB => (2 , 1 , 0) ,
+            Instruction.DIV => (2 , 1 , 0) ,
+            Instruction.SDIV => (2 , 1 , 0) ,
+            Instruction.MOD => (2 , 1 , 0) ,
+            Instruction.SMOD => (2 , 1 , 0) ,
+            Instruction.ADDMOD => (3 , 1 , 0) ,
+            Instruction.MULMOD => (3 , 1 , 0) ,
+            Instruction.EXP => (2 , 1 , 0) ,
+            Instruction.SIGNEXTEND => (2 , 1 , 0) ,
+            Instruction.LT => (2 , 1 , 0) ,
+            Instruction.GT => (2 , 1 , 0) ,
+            Instruction.SLT => (2 , 1 , 0) ,
+            Instruction.SGT => (2 , 1 , 0) ,
+            Instruction.EQ => (2 , 1 , 0) ,
+            Instruction.ISZERO => (1 , 1 , 0),
+            Instruction.AND => (2 , 1 , 0) ,
+            Instruction.OR => (2 , 1 , 0) ,
+            Instruction.XOR => (2 , 1 , 0) ,
+            Instruction.NOT => (1 , 1 , 0),
+            Instruction.BYTE => (2 , 1 , 0) ,
+            Instruction.SHL => (2 , 1 , 0) ,
+            Instruction.SHR => (2 , 1 , 0) ,
+            Instruction.SAR => (2 , 1 , 0) ,
+            Instruction.SHA3 => (2 , 1 , 0) ,
+            Instruction.ADDRESS => (0 , 1 , 0),
+            Instruction.BALANCE => (1 , 1 , 0),
+            Instruction.ORIGIN => (0 , 1 , 0),
+            Instruction.CALLER => (0 , 1 , 0),
+            Instruction.CALLVALUE => (0 , 1 , 0),
+            Instruction.CALLDATALOAD => (1 , 1 , 0),
+            Instruction.CALLDATASIZE => (0 , 1 , 0),
+            Instruction.CALLDATACOPY => (3 , 0 , 0) ,
+            Instruction.CODESIZE => (0 , 1 , 0),
+            Instruction.CODECOPY => (3 , 0 , 0) ,
+            Instruction.GASPRICE => (0 , 1 , 0),
+            Instruction.EXTCODESIZE => (1 , 1 , 0),
+            Instruction.EXTCODECOPY => (4 , 0 , 0) ,
+            Instruction.RETURNDATASIZE => (0 , 1 , 0),
+            Instruction.RETURNDATACOPY => (3 , 0 , 0) ,
+            Instruction.EXTCODEHASH => (1 , 1 , 0),
+            Instruction.BLOCKHASH => (1 , 1 , 0),
+            Instruction.COINBASE => (0 , 1 , 0),
+            Instruction.TIMESTAMP => (0 , 1 , 0),
+            Instruction.NUMBER => (0 , 1 , 0),
+            Instruction.PREVRANDAO => (0 , 1 , 0),
+            Instruction.GASLIMIT => (0 , 1 , 0),
+            Instruction.CHAINID => (0 , 1 , 0),
+            Instruction.SELFBALANCE => (0 , 1 , 0),
+            Instruction.BASEFEE => (0 , 1 , 0),
+            Instruction.POP => (1 , 0 , 0) ,
+            Instruction.MLOAD => (1 , 1 , 0),
+            Instruction.MSTORE => (2 , 0 , 0) ,
+            Instruction.MSTORE8 => (2 , 0 , 0) ,
+            Instruction.SLOAD => (1 , 1 , 0),
+            Instruction.SSTORE => (2 , 0 , 0) ,
+            Instruction.MSIZE => (0 , 1 , 0),
+            Instruction.GAS => (0 , 1 , 0),
+            Instruction.JUMPDEST => (0 , 0 , 0),
+            Instruction.RJUMP => (0 , 0 , 2),
+            Instruction.RJUMPI => (1 , 0 , 2) ,
+            Instruction.RJUMPV => (1 , 0 , 4) ,
+            >= Instruction.PUSH0 and <= Instruction.PUSH32 => (0, 1, instruction - Instruction.PUSH0),
+            >= Instruction.DUP1 and <= Instruction.DUP16 => (instruction - Instruction.DUP1 + 1, instruction - Instruction.DUP1 + 2, 0),
+            >= Instruction.SWAP1 and <= Instruction.SWAP16 => (instruction - Instruction.SWAP1 + 2, instruction - Instruction.SWAP1 + 2, 0),
+            Instruction.LOG0 => (2 , 0 , 0) ,
+            Instruction.LOG1 => (3 , 0 , 0) ,
+            Instruction.LOG2 => (4 , 0 , 0) ,
+            Instruction.LOG3 => (5 , 0 , 0) ,
+            Instruction.LOG4 => (6 , 0 , 0) ,
+            Instruction.CALLF => (0 , 0 , 2),
+            Instruction.RETF => (0 , 0 , 0),
+            Instruction.JUMPF => (0 , 0 , 0),
+            Instruction.CREATE => (3 , 1 , 0) ,
+            Instruction.CALL => (7 , 1 , 0) ,
+            Instruction.RETURN => (2 , 0 , 0) ,
+            Instruction.DELEGATECALL => (6 , 1 , 0) ,
+            Instruction.CREATE2 => (4 , 1 , 0) ,
+            Instruction.STATICCALL => (6 , 1 , 0) ,
+            Instruction.REVERT => (2 , 0 , 0) ,
+            Instruction.INVALID => (0 , 0 , 0),
+            _ => throw new NotImplementedException($"Instruction {instruction} not implemented")
         };
 
         public static string? GetName(this Instruction instruction, bool isPostMerge = false, IReleaseSpec? spec = null)

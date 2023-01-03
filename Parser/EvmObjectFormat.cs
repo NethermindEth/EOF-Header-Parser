@@ -492,7 +492,7 @@ public class EvmObjectFormat
                 while (!stop)
                 {
                     Instruction opcode = (Instruction)code[pos];
-                    (var inputs, var immediates, var outputs) = opcode.StackRequirements(_releaseSpec);
+                    (int inputs, int outputs, int immediates) = opcode.StackRequirements();
 
                     if (recordedStackHeight.ContainsKey(pos))
                     {

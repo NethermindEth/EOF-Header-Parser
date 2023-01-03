@@ -363,7 +363,7 @@ public class EvmObjectFormat
                             return Failure<String>.From($"EIP-4200 : Static Relative Jumpv jumptable must have at least 1 entry");
                         }
 
-                        if (i + count * IMMEDIATE_16BIT_BYTE_COUNT > code.Length)
+                        if (i + 1 + count * IMMEDIATE_16BIT_BYTE_COUNT > code.Length)
                         {
                             header = null;
                             return Failure<String>.From($"EIP-4200 : Static Relative Jumpv jumptable underflow");

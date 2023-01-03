@@ -75,6 +75,14 @@ public record Config {
     }
     public static void HandleLine(int idx, string line, ReleaseSpec spec) {
         EvmObjectFormat? parser = new EvmObjectFormat(spec);
+        // cleanup line
+
+        if(line.StartsWith("#")) {
+            return;
+        }
+
+        line = line.Replace(" ", String.Empty).Replace("-", String.Empty);
+        Console.WriteLine($"Line {idx} : {line}");
         var bytecode = line.toByteArray();
         try {
             var actual = parser.IsValidEof(bytecode);

@@ -239,6 +239,7 @@ public class EvmObjectFormat
 
             SectionHeader[]? codeSections = header.Value.CodeSections;
             (int typeSectionStart, ushort typeSectionSize) = header.Value.TypeSection;
+            var typesection = container.Slice(typeSectionStart, typeSectionSize);
             if (codeSections.Length == 0 || codeSections.Any(section => section.Size == 0))
             {
                 header = null;
@@ -263,6 +264,12 @@ public class EvmObjectFormat
                 return Failure<String>.From($"EIP-4750 : Code section count limit exceeded only {MAXIMUM_CODESECTIONS_COUNT} allowed but found {codeSections.Length}");
             }
 
+            if(ValidateTypeSection(typesection) is Failure<String> failure)
+            {
+                header = null;
+                return failure;
+            }
+
             int startOffset = CalculateHeaderSize(header.Value.CodeSections.Length);
             int calculatedCodeLength = header.Value.TypeSection.Size
                 + header.Value.CodeSections.Sum(c => c.Size)
@@ -277,6 +284,43 @@ public class EvmObjectFormat
             }
             return Success<bool>.From(true);
         }
+
+        public Result ValidateTypeSection(ReadOnlySpan<byte> types)
+        {
+            if (types[0] != 0 || types[1] != 0)
+            {
+                return Failure<String>.From($"EIP-4750 : first 2 bytes of code section must be 0s but found {types[0]}{types[1]}");
+            }
+
+            if (types.Length % MINIMUM_TYPESECTION_SIZE != 0)
+            {
+                return Failure<String>.From($"EIP-4750: type section length must be a product of {MINIMUM_TYPESECTION_SIZE}");
+            }
+
+            for (int offset = 0; offset < types.Length; offset += MINIMUM_TYPESECTION_SIZE)
+            {
+                byte inputCount = types[offset + 0];
+                byte outputCount = types[offset + 1];
+                ushort maxStackHeight = types.Slice(offset + 2, 2).ReadEthUInt16();
+
+                if (inputCount > 0x7F)
+                {
+                    return Failure<String>.From($"EIP-4750 : Too many inputs {inputCount}");
+                }
+
+                if (outputCount > 0x7F)
+                {
+                    return Failure<String>.From($"EIP-4750 : Too many outputs {outputCount}");
+                }
+
+                if (maxStackHeight > 0x3FF)
+                {
+                    return Failure<String>.From($"EIP-3540 : Stack depth too high {maxStackHeight}");
+                }
+            }
+            return Success<bool>.From(true);
+        }
+
         public Result ValidateInstructions(ReadOnlySpan<byte> container, ref EofHeader? header)
         {
             if (!_releaseSpec.IsEip3670Enabled)

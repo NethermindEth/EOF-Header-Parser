@@ -167,6 +167,6 @@ public record Config {
             PrintHelp();
         }
 
-        return true;
+        return isValid;
     }
 }

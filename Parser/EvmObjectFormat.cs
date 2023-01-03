@@ -251,7 +251,7 @@ public class EvmObjectFormat
                 return Failure<String>.From($"EIP-3540: Code Sections count must match TypeSection count, CodeSection count was {codeSections.Length}, expected {typeSectionSize / MINIMUM_TYPESECTION_SIZE}");
             }
 
-            if (container[typeSectionStart] != 0 && container[typeSectionStart] != 0)
+            if (container[typeSectionStart] != 0 || container[typeSectionStart + 1] != 0)
             {
                 header = null;
                 return Failure<String>.From($"EIP-3540: first 2 bytes of type section must be 0s");

@@ -1,3 +1,4 @@
+using static TypeExtensions.FileExtensions;
 public class DiffChecker {
     public static void Check(string[] paths) {
 
@@ -15,7 +16,6 @@ public class DiffChecker {
 
     public Result CheckFileLength(int[] lengths) {
         List<String> diffs = new();
-
         for(int i = 0; i < _paths.Length; i++)
         {
             int size = lengths[i];
@@ -28,7 +28,7 @@ public class DiffChecker {
     }
 
     private Result Check() {
-        var files = _paths.Select(path => File.ReadAllLines(path)).ToArray();
+        var files = _paths.Select(path => FetchFile(path)).ToArray();
 
         if(CheckFileLength(files.Select(file => file.Length).ToArray()) is Failure<String> lengthFailure) {
             return lengthFailure;

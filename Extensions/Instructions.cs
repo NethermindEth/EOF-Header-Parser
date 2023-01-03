@@ -192,6 +192,7 @@ namespace Nethermind.Evm
 
             return instruction switch
             {
+                Instruction.PC => !IsEofContext,
                 Instruction.CALLCODE or Instruction.SELFDESTRUCT when spec.IsEip3670Enabled => !IsEofContext,
                 Instruction.JUMPI or Instruction.JUMP when spec.IsEip4750Enabled == true => !IsEofContext,
                 Instruction.CALLF or Instruction.JUMPF or Instruction.RETF when spec.IsEip4750Enabled => IsEofContext,

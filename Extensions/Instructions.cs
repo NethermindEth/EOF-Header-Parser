@@ -163,7 +163,6 @@ namespace Nethermind.Evm
         CALL = 0xf1,
         RETF = 0xb1, // FunctionSection
         CALLF = 0xb0, // FunctionSection
-        JUMPF = 0xb2,
         CALLCODE = 0xf2,
         RETURN = 0xf3,
         DELEGATECALL = 0xf4, // DelegateCallEnabled
@@ -179,7 +178,7 @@ namespace Nethermind.Evm
         public static bool IsTerminating(this Instruction instruction, IReleaseSpec spec) => instruction switch
         {
             Instruction.INVALID or Instruction.STOP or Instruction.RETURN or Instruction.REVERT => true,
-            Instruction.JUMPF or Instruction.RETF when spec.IsEip4750Enabled => true,
+            Instruction.RETF when spec.IsEip4750Enabled => true,
             _ => false
         };
 
@@ -195,7 +194,7 @@ namespace Nethermind.Evm
                 Instruction.PC => !IsEofContext,
                 Instruction.CALLCODE or Instruction.SELFDESTRUCT when spec.IsEip3670Enabled => !IsEofContext,
                 Instruction.JUMPI or Instruction.JUMP when spec.IsEip4750Enabled == true => !IsEofContext,
-                Instruction.CALLF or Instruction.JUMPF or Instruction.RETF when spec.IsEip4750Enabled => IsEofContext,
+                Instruction.CALLF or Instruction.RETF when spec.IsEip4750Enabled => IsEofContext,
                 Instruction.BEGINSUB or Instruction.RETURNSUB or Instruction.JUMPSUB when spec.SubroutinesEnabled => true,
                 Instruction.RJUMP or Instruction.RJUMPI or Instruction.RJUMPV when spec.StaticRelativeJumpsEnabled => IsEofContext,
                 Instruction.TLOAD or Instruction.TSTORE => spec.TransientStorageEnabled,
@@ -291,7 +290,6 @@ namespace Nethermind.Evm
             Instruction.LOG4 => (6 , 0 , 0) ,
             Instruction.CALLF => (0 , 0 , 2),
             Instruction.RETF => (0 , 0 , 0),
-            Instruction.JUMPF => (0 , 0 , 0),
             Instruction.CREATE => (3 , 1 , 0) ,
             Instruction.CALL => (7 , 1 , 0) ,
             Instruction.RETURN => (2 , 0 , 0) ,
@@ -320,7 +318,7 @@ namespace Nethermind.Evm
         public static bool IsOnlyForEofBytecode(this Instruction instruction) => instruction switch
         {
             Instruction.RJUMP or Instruction.RJUMPI or Instruction.RJUMPV => true,
-            Instruction.RETF or Instruction.CALLF or Instruction.JUMPF => true,
+            Instruction.RETF or Instruction.CALLF => true,
             _ => false
         };
     }

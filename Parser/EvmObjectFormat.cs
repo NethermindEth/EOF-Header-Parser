@@ -575,7 +575,8 @@ public class EvmObjectFormat
                             {
                                 var offset = code.Slice(pos + 1, IMMEDIATE_16BIT_BYTE_COUNT).ReadEthInt16();
                                 var jumpDestination = pos + immediates + 1 + offset;
-                                pos += jumpDestination;
+                                workSet.Push((jumpDestination, stackHeight));
+                                stop = true;
                                 break;
                             }
                         case Instruction.RJUMPI:
@@ -606,6 +607,8 @@ public class EvmObjectFormat
                                 break;
                             }
                     }
+
+                    if(stop) break;
 
                     if (opcode.IsTerminating(_releaseSpec))
                     {

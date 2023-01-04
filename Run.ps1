@@ -3,6 +3,7 @@ Function Execute-Command ($commandTitle, $commandPath, $commandArguments)
   Try {
     $pinfo = New-Object System.Diagnostics.ProcessStartInfo
     $pinfo.FileName = $commandPath
+    $pinfo.WorkingDirectory = $PSScriptRoot
     $pinfo.RedirectStandardError = $true
     $pinfo.RedirectStandardOutput = $true
     $pinfo.UseShellExecute = $false
@@ -37,6 +38,7 @@ Function Show-Notification ($ToastTitle, $ToastText) {
     $Toast = [Windows.UI.Notifications.ToastNotification]::new($SerializedXml)
     $Toast.Tag = "PowerShell"
     $Toast.Group = "PowerShell"
+    $Toast.Priority = [Windows.UI.Notifications.ToastNotificationPriority]::High
     $Toast.ExpirationTime = [DateTimeOffset]::Now.AddMinutes(1)
 
     $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("PowerShell")
@@ -54,6 +56,10 @@ Function Setup-Monitor ($action, $interval) {
     $VerificationResult = Execute-Command -commandTitle "Run All.input" -commandPath "dotnet" -commandArguments "run --no-build -c Release --Inputs https://raw.githubusercontent.com/holiman/txparse/main/eofparse/all.input"
     $VerificationResult.stdout | Out-File -FilePath "all.output"
     $DiffsProcessResult = Execute-Command -commandTitle "Run All.input" -commandPath "dotnet" -commandArguments "run --no-build -c Release --DiffFiles all.output https://raw.githubusercontent.com/holiman/txparse/main/eofparse/all.output"
+    if($DiffsProcessResult.ExitCode -ne 0) {
+        echo $DiffsProcessResult.stderr
+        return
+    }
     Show-Notification -ToastTitle "Diffing Result" -ToastText $DiffsProcessResult.stdout
 }
 

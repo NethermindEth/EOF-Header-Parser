@@ -323,13 +323,5 @@ namespace Nethermind.Evm
             Instruction.RETF or Instruction.CALLF or Instruction.JUMPF => true,
             _ => false
         };
-
-        public static bool IsTerminatingInstruction(this Instruction instruction, IReleaseSpec spec = null) => instruction switch
-        {
-            Instruction.INVALID or Instruction.STOP or Instruction.RETURN or Instruction.REVERT => true,
-            Instruction.RETF or Instruction.JUMPF => spec?.IsEip4750Enabled ?? true,
-            // Instruction.SELFDESTRUCT => true
-            _ => false
-        };
     }
 }

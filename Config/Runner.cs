@@ -81,8 +81,8 @@ public record Config {
             return;
         }
 
-        line = line.Replace(" ", String.Empty).Replace("-", String.Empty);
-        Console.WriteLine($"Line {idx} : {line}");
+        line = new string(line.Where(c => char.IsLetterOrDigit(c)).ToArray());
+
         var bytecode = line.toByteArray();
         try {
             var actual = parser.IsValidEof(bytecode);

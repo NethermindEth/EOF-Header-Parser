@@ -1,6 +1,6 @@
 echo "Building ... "
-dotnet build -c Release 
+Start-Process -FilePath "dotnet" -ArgumentList "build", "-c", "Release" -Wait  -NoNewWindow
 echo "Running with inputs from Holiman corpus"
-dotnet run --no-build --Inputs "https://raw.githubusercontent.com/holiman/txparse/main/eofparse/all.input" 1> all.output 2> all.err
+Start-Process -FilePath "dotnet" -ArgumentList "run", "--no-build", "-c", "Release", "--Inputs", "https://raw.githubusercontent.com/holiman/txparse/main/eofparse/all.input" -Wait -RedirectStandardOutput "all.output" -RedirectStandardError "all.err"  -NoNewWindow
 echo "Diffing result against Holiman corpus"
-dotnet run --no-build --DiffFiles all.output "https://raw.githubusercontent.com/holiman/txparse/main/eofparse/all.output"
+Start-Process -FilePath "dotnet" -ArgumentList "run", "--no-build", "-c", "Release", "--DiffFiles", "all.output", "https://raw.githubusercontent.com/holiman/txparse/main/eofparse/all.output" -Wait -NoNewWindow

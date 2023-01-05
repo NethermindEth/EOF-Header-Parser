@@ -39,7 +39,7 @@ Function Show-Notification ($ToastTitle, $ToastText) {
     $Toast.Tag = "PowerShell"
     $Toast.Group = "PowerShell"
     $Toast.Priority = [Windows.UI.Notifications.ToastNotificationPriority]::High
-    $Toast.ExpirationTime = [DateTimeOffset]::Now.AddMinutes(1)
+    $Toast.ExpirationTime = [DateTimeOffset]::Now.AddHours(1)
 
     $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("PowerShell")
     $Notifier.Show($Toast);

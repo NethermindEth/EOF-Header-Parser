@@ -175,14 +175,23 @@ namespace Nethermind.Evm
 
     public static class InstructionExtensions
     {
-        public static bool IsTerminating(this Instruction instruction, IReleaseSpec spec) => instruction switch
+        public static bool IsTerminating(this Instruction instruction) => instruction switch
         {
-            Instruction.INVALID or Instruction.STOP or Instruction.RETURN or Instruction.REVERT => true,
-            Instruction.RETF when spec.IsEip4750Enabled => true,
+            Instruction.RETF or Instruction.INVALID or Instruction.STOP or Instruction.RETURN or Instruction.REVERT => true,
+            // Instruction.SELFDESTRUCT => true
             _ => false
         };
 
-        public static bool IsValid(this Instruction instruction, IReleaseSpec spec, bool IsEofContext)
+        public static int GetImmediateCount(this Instruction instruction, bool IsEofContext, byte jumpvCount = 0)
+            => instruction switch
+            {
+                Instruction.RJUMP or Instruction.RJUMPI => IsEofContext ? EvmObjectFormat.Eof1.TWO_BYTE_LENGTH : 0,
+                Instruction.RJUMPV => IsEofContext ? jumpvCount * EvmObjectFormat.Eof1.TWO_BYTE_LENGTH + EvmObjectFormat.Eof1.ONE_BYTE_LENGTH : 0,
+                >= Instruction.PUSH0 and <= Instruction.PUSH32 => instruction - Instruction.PUSH0,
+                _ => 0
+            };
+            
+        public static bool IsValid(this Instruction instruction, bool IsEofContext)
         {
             if (!Enum.IsDefined(instruction))
             {
@@ -192,24 +201,10 @@ namespace Nethermind.Evm
             return instruction switch
             {
                 Instruction.PC => !IsEofContext,
-                Instruction.CALLCODE or Instruction.SELFDESTRUCT when spec.IsEip3670Enabled => !IsEofContext,
-                Instruction.JUMPI or Instruction.JUMP when spec.IsEip4750Enabled == true => !IsEofContext,
-                Instruction.CALLF or Instruction.RETF when spec.IsEip4750Enabled => IsEofContext,
-                Instruction.BEGINSUB or Instruction.RETURNSUB or Instruction.JUMPSUB when spec.SubroutinesEnabled => true,
-                Instruction.RJUMP or Instruction.RJUMPI or Instruction.RJUMPV when spec.StaticRelativeJumpsEnabled => IsEofContext,
-                Instruction.TLOAD or Instruction.TSTORE => spec.TransientStorageEnabled,
-                Instruction.REVERT => spec.RevertOpcodeEnabled,
-                Instruction.STATICCALL => spec.StaticCallEnabled,
-                Instruction.CREATE2 => spec.Create2OpcodeEnabled,
-                Instruction.DELEGATECALL => spec.DelegateCallEnabled,
-                Instruction.PUSH0 => spec.IncludePush0Instruction,
-                Instruction.BASEFEE => spec.BaseFeeEnabled,
-                Instruction.SELFBALANCE => spec.SelfBalanceOpcodeEnabled,
-                Instruction.CHAINID => spec.ChainIdOpcodeEnabled,
-                Instruction.EXTCODEHASH => spec.ExtCodeHashOpcodeEnabled,
-                Instruction.EXTCODECOPY or Instruction.EXTCODESIZE => spec.ReturnDataOpcodesEnabled,
-                Instruction.SHL or Instruction.SHR or Instruction.SAR => spec.ShiftOpcodesEnabled,
-                Instruction.JUMP or Instruction.JUMPI => !spec.IsEip4750Enabled,
+                Instruction.CALLCODE or Instruction.SELFDESTRUCT => !IsEofContext,
+                Instruction.JUMPI or Instruction.JUMP => !IsEofContext,
+                Instruction.CALLF or Instruction.RETF => IsEofContext,
+                Instruction.BEGINSUB or Instruction.RETURNSUB or Instruction.JUMPSUB => true,
                 _ => true
             };
         }

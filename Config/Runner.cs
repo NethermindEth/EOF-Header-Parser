@@ -74,8 +74,6 @@ public record Config {
         }
     }
     public static void HandleLine(int idx, string line, ReleaseSpec spec) {
-        EvmObjectFormat? parser = new EvmObjectFormat(spec);
-        // cleanup line
 
         if(line.StartsWith("#")) {
             return;
@@ -85,7 +83,7 @@ public record Config {
 
         var bytecode = line.toByteArray();
         try {
-            var actual = parser.IsValidEof(bytecode);
+            var actual = EvmObjectFormat.IsValidEof(bytecode, out _);
             switch(actual) {
                 case Success<EofHeader?> success:
                     var codeSections = String.Join(",", success.Value.Value.CodeSections.Select(section => {

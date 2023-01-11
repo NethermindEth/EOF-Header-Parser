@@ -61,6 +61,8 @@ Function Setup-Monitor ($action, $interval) {
         return
     }
     Show-Notification -ToastTitle "Diffing Result" -ToastText $DiffsProcessResult.stdout
+    $DiffsProcessResult.stdout | Out-File -FilePath "diff.result"
+
 }
 
 Execute-Command -commandTitle "Run Build" -commandPath "dotnet" -commandArguments "build -c Release"
